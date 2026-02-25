@@ -254,69 +254,77 @@ def main():
                    "_g" + str(options.goals) + "_ct" + str(len(content_types))
 
     # Open output file
+# Open output file
     with open(problem_name + ".pddl", 'w') as f:
         # Write the initial part of the problem
-
         f.write("(define (problem " + problem_name + ")\n")
-        f.write("(:domain drone-domain)\n")
-        f.write("(:objects\n")
+        f.write("  (:domain emergency-logistics)\n") # Nombre de tu dominio
 
         ######################################################################
         # Write objects
+        f.write("  (:objects\n")
 
-        # TODO: Change the type names below (drone, location, ...)
-        # to suit your domain.
+        # Escribimos los objetos usando los nombres de tipos de tu dominio
+        f.write("    " + " ".join(drone) + " - drone\n")
+        f.write("    " + " ".join(location) + " - location\n")
+        f.write("    " + " ".join(crate) + " - box\n") # Tu dominio lo llama 'box'
+        f.write("    " + " ".join(content_types) + " - content\n")
+        f.write("    " + " ".join(person) + " - person\n")
+        
+        # Generar brazos (2 por cada dron)
+        arms = []
+        for d in drone:
+            arms.append(f"arm1_{d}")
+            arms.append(f"arm2_{d}")
+        f.write("    " + " ".join(arms) + " - arm\n")
 
-        for x in drone:
-            f.write("\t" + x + " - drone\n")
-
-        for x in location:
-            f.write("\t" + x + " - location\n")
-
-        for x in crate:
-            f.write("\t" + x + " - crate\n")
-
-        for x in content_types:
-            f.write("\t" + x + " - contents\n")
-
-        for x in person:
-            f.write("\t" + x + " - person\n")
-
-        for x in carrier:
-            f.write("\t" + x + " - carrier\n")
-
-        f.write(")\n")
+        f.write("  )\n")
 
         ######################################################################
         # Generate an initial state
+        f.write("  (:init\n")
 
-        f.write("(:init\n")
+        # Ubicar drones en el depot
+        for d in drone:
+            f.write(f"    (at-drone {d} depot)\n")
+            # Asignar los dos brazos a este dron y marcarlos como libres
+            f.write(f"    (arm-of arm1_{d} {d})\n")
+            f.write(f"    (arm-of arm2_{d} {d})\n")
+            f.write(f"    (arm-free arm1_{d})\n")
+            f.write(f"    (arm-free arm2_{d})\n")
 
-        # TODO: Initialize all facts here!
+        # Ubicar personas en localizaciones aleatorias (excluyendo el depot)
+        for p in person:
+            # random.choice elige una loc al azar, saltándose el 'depot' (índice 0)
+            loc_aleatoria = random.choice(location[1:]) 
+            f.write(f"    (at-person {p} {loc_aleatoria})\n")
 
-        f.write(")\n")
+        # Ubicar cajas en el depot y asignarles su contenido
+        for content_idx, box_list in enumerate(crates_with_contents):
+            for box in box_list:
+                f.write(f"    (at-box {box} depot)\n")
+                f.write(f"    (box-has {box} {content_types[content_idx]})\n")
+
+        f.write("  )\n")
 
         ######################################################################
         # Write Goals
-
-        f.write("(:goal (and\n")
+        f.write("  (:goal (and\n")
 
         # All Drones should end up at the depot
-        for x in drone:
-            f.write("\n")
-            # TODO: Write a goal that the drone x is at the depot
+        for d in drone:
+            f.write(f"    (at-drone {d} depot)\n")
 
+        # Goals for persons needing contents
         for x in range(options.persons):
             for y in range(len(content_types)):
                 if need[x][y]:
                     person_name = person[x]
                     content_name = content_types[y]
-                    # TODO: write a goal that the person needs a crate
-                    # with this specific content
+                    f.write(f"    (person-has {person_name} {content_name})\n")
 
-        f.write("\t))\n")
+        f.write("  ))\n")
         f.write(")\n")
-
 
 if __name__ == '__main__':
     main()
