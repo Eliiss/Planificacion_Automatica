@@ -42,20 +42,6 @@
     )
   )
 
-  (:action drop
-    :parameters (?d - drone ?a - arm ?c - box ?l - location)
-    :precondition (and
-      (arm-of ?a ?d)
-      (at-drone ?d ?l)
-      (holding ?a ?c)
-    )
-    :effect (and
-      (at-box ?c ?l)
-      (arm-free ?a)
-      (not (holding ?a ?c))
-    )
-  )
-
   (:action deliver
     :parameters (?d - drone ?a - arm ?c - box ?p - person ?l - location ?t - content)
     :precondition (and
@@ -67,7 +53,6 @@
     )
     :effect (and
       (person-has ?p ?t)
-      (at-box ?c ?l)
       (arm-free ?a)
       (not (holding ?a ?c))
     )
