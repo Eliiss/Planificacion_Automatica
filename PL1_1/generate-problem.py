@@ -103,7 +103,7 @@ def setup_content_types(options):
     for x in range(len(content_types)):
         crates = []
         for y in range(num_crates_with_contents[x]):
-            crates.append("crate" + str(counter))
+            crates.append("box" + str(counter))
             counter += 1
         crates_with_contents.append(crates)
 
@@ -218,6 +218,7 @@ def main():
     crate = []
     carrier = []
     location = []
+    arm = []
 
     location.append("depot")
     for x in range(options.locations):
@@ -229,7 +230,10 @@ def main():
     for x in range(options.persons):
         person.append("person" + str(x + 1))
     for x in range(options.crates):
-        crate.append("crate" + str(x + 1))
+        crate.append("box" + str(x + 1))
+    # Generamos 2 brazos por dron
+    for x in range(options.drones * 2):
+        arm.append("arm" + str(x + 1))
     
     # Determine the set of crates for each content.
     # If content_types[0] is "food",
@@ -254,76 +258,85 @@ def main():
                    "_g" + str(options.goals) + "_ct" + str(len(content_types))
 
     # Open output file
-# Open output file
     with open(problem_name + ".pddl", 'w') as f:
         # Write the initial part of the problem
         f.write("(define (problem " + problem_name + ")\n")
-        f.write("  (:domain emergency-logistics)\n") # Nombre de tu dominio
+        f.write("(:domain emergency-logistics)\n")
 
         ######################################################################
         # Write objects
-        f.write("  (:objects\n")
+        f.write("(:objects\n")
 
         # Escribimos los objetos usando los nombres de tipos de tu dominio
-        f.write("    " + " ".join(drone) + " - drone\n")
-        f.write("    " + " ".join(location) + " - location\n")
-        f.write("    " + " ".join(crate) + " - box\n") # Tu dominio lo llama 'box'
-        f.write("    " + " ".join(content_types) + " - content\n")
-        f.write("    " + " ".join(person) + " - person\n")
+        for x in drone:
+            f.write(f"\t{x} - drone\n")
+        for x in arm:
+            f.write(f"\t{x} - arm\n")
+        for x in location:
+            f.write(f"\t{x} - location\n")
+        for x in person:
+            f.write(f"\t{x} - person\n")
+        for x in crate:
+            f.write(f"\t{x} - box\n")
+        for x in content_types:
+            f.write(f"\t{x} - content\n")
+        for x in carrier:
+            f.write("\t" + x + " - carrier\n")
         
-        # Generar brazos (2 por cada dron)
-        arms = []
-        for d in drone:
-            arms.append(f"arm1_{d}")
-            arms.append(f"arm2_{d}")
-        f.write("    " + " ".join(arms) + " - arm\n")
-
-        f.write("  )\n")
+        f.write(")\n")
 
         ######################################################################
         # Generate an initial state
-        f.write("  (:init\n")
+        f.write("(:init\n")
 
         # Ubicar drones en el depot
         for d in drone:
-            f.write(f"    (at-drone {d} depot)\n")
-            # Asignar los dos brazos a este dron y marcarlos como libres
-            f.write(f"    (arm-of arm1_{d} {d})\n")
-            f.write(f"    (arm-of arm2_{d} {d})\n")
-            f.write(f"    (arm-free arm1_{d})\n")
-            f.write(f"    (arm-free arm2_{d})\n")
+            f.write(f"\t(at-drone {d} depot)\n")
+        # Asignar 2 brazos a cada dron y dejarlos libres
+        arm_idx = 0
+        for d in drone:
+            a1 = arm[arm_idx]
+            a2 = arm[arm_idx + 1]
+            f.write(f"\t(arm-of {a1} {d})\n")
+            f.write(f"\t(arm-of {a2} {d})\n")
+            f.write(f"\t(arm-free {a1})\n")
+            f.write(f"\t(arm-free {a2})\n")
+            arm_idx += 2
 
-        # Ubicar personas en localizaciones aleatorias (excluyendo el depot)
-        for p in person:
-            # random.choice elige una loc al azar, saltándose el 'depot' (índice 0)
-            loc_aleatoria = random.choice(location[1:]) 
-            f.write(f"    (at-person {p} {loc_aleatoria})\n")
+        # 3. Ubicación de personas
+        for i, p_name in enumerate(person):
+            # Asignamos personas a locations
+            # location[0] es depot
+            loc_idx = (i % options.locations) + 1
+            p_loc = location[loc_idx]
+            f.write(f"\t(at-person {p_name} {p_loc})\n")
 
         # Ubicar cajas en el depot y asignarles su contenido
-        for content_idx, box_list in enumerate(crates_with_contents):
-            for box in box_list:
-                f.write(f"    (at-box {box} depot)\n")
-                f.write(f"    (box-has {box} {content_types[content_idx]})\n")
+        for i, boxes_list in enumerate(crates_with_contents):
+            c_type = content_types[i]
+            for b_name in boxes_list:
+                f.write(f"\t(at-box {b_name} depot)\n")
+                f.write(f"\t(box-has {b_name} {c_type})\n")
 
-        f.write("  )\n")
+        f.write(")\n")
 
         ######################################################################
         # Write Goals
-        f.write("  (:goal (and\n")
-
+        f.write("(:goal (and\n")
+        
         # All Drones should end up at the depot
         for d in drone:
-            f.write(f"    (at-drone {d} depot)\n")
+             f.write(f"\t(at-drone {d} depot)\n")
 
-        # Goals for persons needing contents
+        # Objetivos de las personas
         for x in range(options.persons):
             for y in range(len(content_types)):
                 if need[x][y]:
                     person_name = person[x]
                     content_name = content_types[y]
-                    f.write(f"    (person-has {person_name} {content_name})\n")
+                    f.write(f"\t(person-has {person_name} {content_name})\n")        
 
-        f.write("  ))\n")
+        f.write("\t))\n")
         f.write(")\n")
 
 if __name__ == '__main__':
