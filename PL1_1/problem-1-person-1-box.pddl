@@ -22,6 +22,8 @@
 
     (at-box box1 depot)
     (box-has box1 food)
+
+    (full-box box1)
   )
 
   (:goal (and

@@ -44,6 +44,11 @@
 	(box-has box4 food)
 	(at-box box5 depot)
 	(box-has box5 medicine)
+	(full-box box1)
+	(full-box box2)
+	(full-box box3)
+	(full-box box4)
+	(full-box box5)
 )
 (:goal (and
 	(at-drone drone1 depot)

@@ -15,6 +15,7 @@
     (holding ?a - arm ?c - box)
 
     (box-has ?c - box ?t - content)
+    (full-box ?c -box)
     (person-has ?p - person ?t - content)
   )
 
@@ -34,6 +35,7 @@
       (arm-free ?a)
       (at-drone ?d ?l)
       (at-box ?c ?l)
+      (full-box ?c)
     )
     :effect (and
       (holding ?a ?c)
@@ -53,8 +55,10 @@
     )
     :effect (and
       (person-has ?p ?t)
+      (at-box ?c ?l)
       (arm-free ?a)
       (not (holding ?a ?c))
+      (not (full-box ?c))
     )
   )
 )

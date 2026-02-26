@@ -31,6 +31,10 @@
     (box-has box1 food)
     (box-has box2 medicine)
     (box-has box3 food)
+
+    (full-box box1)
+    (full-box box2)
+    (full-box box3)
   )
 
   (:goal (and
