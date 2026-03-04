@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 ########################################################################################
-# Problem instance generator skeleton for emergencies drones domain.
-# Based on the Linköping University TDDD48 2021 course.
+# Problem instance generator for emergency-logistics-transporters domain.
+# Adapted from the Linköping University TDDD48 2021 course.
 # https://www.ida.liu.se/~TDDD48/labs/2021/lab1/index.en.shtml
 #
-# You mainly have to change the parts marked as TODO.
+# This version is adapted for a domain with transporters and action costs.
 #
 ########################################################################################
 
@@ -155,14 +155,16 @@ def main():
 
     parser = OptionParser(usage='python generator.py [-help] options...')
     parser.add_option('-d', '--drones', metavar='NUM', dest='drones', action='store', type=int, help='the number of drones')
-    parser.add_option('-r', '--carriers', metavar='NUM', type=int, dest='carriers',
-                      help='the number of carriers, for later labs; use 0 for no carriers')
+    parser.add_option('-t', '--transporters', metavar='NUM', type=int, dest='transporters',
+                      help='the number of transporters')
     parser.add_option('-l', '--locations', metavar='NUM', type=int, dest='locations',
                       help='the number of locations apart from the depot ')
     parser.add_option('-p', '--persons', metavar='NUM', type=int, dest='persons', help='the number of persons')
     parser.add_option('-c', '--crates', metavar='NUM', type=int, dest='crates', help='the number of crates available')
     parser.add_option('-g', '--goals', metavar='NUM', type=int, dest='goals',
                       help='the number of crates assigned in the goal')
+    parser.add_option('-s', '--slots', metavar='NUM', type=int, dest='slots',
+                      help='the number of slots available in each transporter')
 
     (options, args) = parser.parse_args()
 
@@ -170,8 +172,8 @@ def main():
         print("You must specify --drones (use --help for help)")
         sys.exit(1)
 
-    if options.carriers is None:
-        print("You must specify --carriers (use --help for help)")
+    if options.transporters is None:
+        print("You must specify --transporters (use --help for help)")
         sys.exit(1)
 
     if options.locations is None:
@@ -190,6 +192,10 @@ def main():
         print("You must specify --goals (use --help for help)")
         sys.exit(1)
 
+    if options.slots is None:
+        print("You must specify --slots (use --help for help)")
+        sys.exit(1)
+
     if options.goals > options.crates:
         print("Cannot have more goals than crates")
         sys.exit(1)
@@ -203,7 +209,8 @@ def main():
         sys.exit(1)
 
     print("Drones\t\t", options.drones)
-    print("Carriers\t", options.carriers)
+    print("Transporters\t", options.transporters)
+    print("Slots per transporter\t", options.slots)
     print("Locations\t", options.locations)
     print("Persons\t\t", options.persons)
     print("Crates\t\t", options.crates)
@@ -216,24 +223,25 @@ def main():
     drone = []
     person = []
     crate = []
-    carrier = []
+    transporter = []
     location = []
-    arm = []
+    num = []
 
     location.append("depot")
     for x in range(options.locations):
         location.append("loc" + str(x + 1))
     for x in range(options.drones):
         drone.append("drone" + str(x + 1))
-    for x in range(options.carriers):
-        carrier.append("carrier" + str(x + 1))
+    for x in range(options.transporters):
+        transporter.append("transporter" + str(x + 1))
     for x in range(options.persons):
         person.append("person" + str(x + 1))
     for x in range(options.crates):
         crate.append("box" + str(x + 1))
-    # Generamos 2 brazos por dron
-    for x in range(options.drones * 2):
-        arm.append("arm" + str(x + 1))
+    
+    # Generate numbers from 0 to slots (inclusive)
+    for x in range(options.slots + 1):
+        num.append("n" + str(x))
     
     # Determine the set of crates for each content.
     # If content_types[0] is "food",
@@ -253,25 +261,23 @@ def main():
     need = setup_person_needs(options, crates_with_contents)
 
     # Define a problem name
-    problem_name = "drone_problem_d" + str(options.drones) + "_r" + str(options.carriers) + \
+    problem_name = "drone_problem_d" + str(options.drones) + "_t" + str(options.transporters) + \
                    "_l" + str(options.locations) + "_p" + str(options.persons) + "_c" + str(options.crates) + \
-                   "_g" + str(options.goals) + "_ct" + str(len(content_types))
+                   "_g" + str(options.goals) + "_s" + str(options.slots) + "_ct" + str(len(content_types))
 
     # Open output file
     with open(problem_name + ".pddl", 'w') as f:
         # Write the initial part of the problem
         f.write("(define (problem " + problem_name + ")\n")
-        f.write("(:domain emergency-logistics)\n")
+        f.write("(:domain emergency-logistics-transporters)\n")
 
         ######################################################################
         # Write objects
         f.write("(:objects\n")
 
-        # Escribimos los objetos usando los nombres de tipos de tu dominio
+        # Write objects using the type names from the domain
         for x in drone:
             f.write(f"\t{x} - drone\n")
-        for x in arm:
-            f.write(f"\t{x} - arm\n")
         for x in location:
             f.write(f"\t{x} - location\n")
         for x in person:
@@ -280,8 +286,10 @@ def main():
             f.write(f"\t{x} - box\n")
         for x in content_types:
             f.write(f"\t{x} - content\n")
-        for x in carrier:
-            f.write("\t" + x + " - carrier\n")
+        for x in transporter:
+            f.write(f"\t{x} - transporter\n")
+        for x in num:
+            f.write(f"\t{x} - num\n")
         
         f.write(")\n")
 
@@ -289,29 +297,42 @@ def main():
         # Generate an initial state
         f.write("(:init\n")
 
-        # Ubicar drones en el depot
+        # Initialize total-cost
+        f.write("\t(= (total-cost) 0)\n")
+
+        # Set flight costs between all pairs of locations
+        for i in range(len(location)):
+            for j in range(len(location)):
+                if i != j:
+                    cost = flight_cost(location_coords, i, j)
+                    f.write(f"\t(= (fly-cost {location[i]} {location[j]}) {cost})\n")
+
+        # Place drones at the depot
         for d in drone:
             f.write(f"\t(at-drone {d} depot)\n")
-        # Asignar 2 brazos a cada dron y dejarlos libres
-        arm_idx = 0
+        
+        # All drones have a free arm
         for d in drone:
-            a1 = arm[arm_idx]
-            a2 = arm[arm_idx + 1]
-            f.write(f"\t(arm-of {a1} {d})\n")
-            f.write(f"\t(arm-of {a2} {d})\n")
-            f.write(f"\t(arm-free {a1})\n")
-            f.write(f"\t(arm-free {a2})\n")
-            arm_idx += 2
+            f.write(f"\t(arm-free {d})\n")
 
-        # 3. Ubicación de personas
+        # Place transporters at the depot and initialize free slots
+        for tr in transporter:
+            f.write(f"\t(at-transporter {tr} depot)\n")
+            f.write(f"\t(free-slots {tr} {num[options.slots]})\n")
+
+        # Setup the "siguiente" (next) relation between numbers
+        for i in range(len(num) - 1):
+            f.write(f"\t(siguiente {num[i]} {num[i + 1]})\n")
+
+        # Place persons at locations
         for i, p_name in enumerate(person):
-            # Asignamos personas a locations
-            # location[0] es depot
+            # Assign persons to locations
+            # location[0] is depot
             loc_idx = (i % options.locations) + 1
             p_loc = location[loc_idx]
             f.write(f"\t(at-person {p_name} {p_loc})\n")
 
-        # Ubicar cajas en el depot y asignarles su contenido
+        # Place boxes at the depot and assign their contents
         for i, boxes_list in enumerate(crates_with_contents):
             c_type = content_types[i]
             for b_name in boxes_list:
@@ -329,7 +350,7 @@ def main():
         for d in drone:
              f.write(f"\t(at-drone {d} depot)\n")
 
-        # Objetivos de las personas
+        # Person goals
         for x in range(options.persons):
             for y in range(len(content_types)):
                 if need[x][y]:
@@ -338,6 +359,11 @@ def main():
                     f.write(f"\t(person-has {person_name} {content_name})\n")        
 
         f.write("\t))\n")
+        
+        ######################################################################
+        # Write metric
+        f.write("(:metric minimize (total-cost))\n")
+        
         f.write(")\n")
 
 if __name__ == '__main__':

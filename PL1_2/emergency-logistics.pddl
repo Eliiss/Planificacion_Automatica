@@ -37,6 +37,7 @@
 
   ;; Movimientos
 
+  ;; borrar fly para ejecutar problemas.
   (:action fly
     :parameters (?d - drone ?from - location ?to - location)
     :precondition (at-drone ?d ?from)
@@ -57,8 +58,8 @@
     :effect (and
       (not (at-drone ?d ?from))
       (at-drone ?d ?to)
-      (not (at-transporter ?d ?from))
-      (at-transporter ?d ?to)
+      (not (at-transporter ?tr ?from))
+      (at-transporter ?tr ?to)
       (increase (total-cost) (fly-cost ?from ?to))
     )
   )
