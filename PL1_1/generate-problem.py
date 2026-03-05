@@ -267,7 +267,7 @@ def main():
         # Write objects
         f.write("(:objects\n")
 
-        # Escribimos los objetos usando los nombres de tipos de tu dominio
+        # Escribimos los objetos usando los nombres de tipos del dominio
         for x in drone:
             f.write(f"\t{x} - drone\n")
         for x in arm:
