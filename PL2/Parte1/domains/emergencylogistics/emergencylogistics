@@ -1,0 +1,85 @@
+(defdomain emergencylogistics
+  (
+  (:operator (!fly ?d ?from ?to)
+    ((at-drone ?d ?from))
+
+    ((at-drone ?d ?from))
+
+    ((at-drone ?d ?to))
+   )
+
+  (:operator (!pick ?d ?a ?c ?l)
+    ((arm-of ?a ?d)
+     (arm-free ?a)
+     (at-drone ?d ?l)
+     (at-box ?c ?l)
+     (full-box ?c))
+    
+    ((arm-free ?a)
+     (at-box ?c ?l))
+
+    ((holding ?a ?c))
+  )
+
+  (:operator (!deliver ?d ?a ?c ?p ?l ?t)
+    ((arm-of ?a ?d)
+     (at-drone ?d ?l)
+     (at-person ?p ?l)
+     (holding ?a ?c)
+     (box-has ?c ?t)
+     (needs ?p ?t))
+     
+    ((holding ?a ?c)
+     (full-box ?c)
+     (needs ?p ?t))
+     
+    ((at-box ?c ?l)
+     (arm-free ?a))
+  )
+
+
+  ; =========================
+  ; MÉTODOS
+  ; =========================
+
+  ; Tarea principal: seguir atendiendo necesidades hasta que no quede ninguna.
+  (:method (enviar-todo)
+    hay-necesidad
+    ((needs ?p ?t))
+    ((atender-persona ?p ?t)
+     (enviar-todo))
+
+    terminado
+    ()
+    ()
+  )
+
+  (:method (atender-persona ?p ?t)
+
+      entrega-basica
+      ((at-person ?p ?lp)
+      (at-drone ?d ?ld)
+      (at-box ?c ?lb)
+      (box-has ?c ?t)
+      (full-box ?c)
+      (arm-of ?a ?d)
+      (arm-free ?a))
+
+      ((mover-drone ?d ?ld ?lb)
+      (!pick ?d ?a ?c ?lb)
+      (mover-drone ?d ?lb ?lp)
+      (!deliver ?d ?a ?c ?p ?lp ?t))
+  )
+
+  (:method (mover-drone ?d ?from ?to)
+
+      ya-esta
+      ((at-drone ?d ?to))
+      ()
+
+      volar
+      ((at-drone ?d ?from))
+      ((!fly ?d ?from ?to))
+  )
+  )
+)

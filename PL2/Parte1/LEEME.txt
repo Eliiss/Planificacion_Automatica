@@ -1,0 +1,21 @@
+INSTRUCCIONES DE USO
+
+Esta versión de JSHOP2 está preparada para su uso en Ubuntu, donde debe estar instalado el JDK y JRE. Las pruebas realizadas se han hecho con Java 17, se desconoce el funcionamiento con otras versiones anteriores o posteriores. Para instalar el JDK 17 en Ubuntu usar el comando>
+
+sudo apt install openjdk-17-jdk
+
+Para usar JSHOP2 se debe crear una carpeta dentro de la carpeta "domains" con el nombre del dominio que queramos, como el dominio de ejemplo "basic" y, dentro de ella, debe estar el fichero de dominio con el mismo nombre y sin extensión (ej.: "basic"), así como el fichero de problema que siempre debe ser nombrado "problem".
+
+Con esta estructura de carpetas y ficheros, abriremos una terminal en la carpeta raiz (donde se encuentra este fichero README) y ejecutaremos el comando:
+
+./jshop2-gui.sh basic
+
+o
+
+./jshop2-console.sh basic
+
+Esto lanzará la compilación del fichero de dominio y de problema, y lanzará el GUI para poder visualizar el plan generado, o mostrará el plan por consola, según el comando utilizado.
+
+La carpeta domains incluye algunos otros ejemplos, además de basic, con los que se puede probar el uso de JSHOP2.
+
+

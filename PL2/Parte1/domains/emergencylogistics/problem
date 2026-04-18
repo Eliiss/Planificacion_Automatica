@@ -1,0 +1,35 @@
+(defproblem problem emergencylogistics
+  (
+   ; Dron en el depósito
+   (at-drone d1 depot)
+
+   ; Brazos del dron
+   (arm-of a1 d1)
+   (arm-of a2 d1)
+   (arm-free a1)
+   (arm-free a2)
+
+   ; Personas en localizaciones
+   (at-person alice loc1)
+   (at-person juan loc2)
+
+   ; Cajas en el depósito
+   (at-box box1 depot)
+   (at-box box2 depot)
+
+   ; Contenido de las cajas
+   (box-has box1 food)
+   (box-has box2 medicine)
+
+   ; Las cajas están llenas
+   (full-box box1)
+   (full-box box2)
+
+   ; Personas necesitan
+   (needs alice food)
+   (needs juan medicine)
+  )
+
+  ; Tarea principal: enviar todas las cajas necesarias
+  ((enviar-todo))
+)
