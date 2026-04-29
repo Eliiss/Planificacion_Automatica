@@ -1,0 +1,50 @@
+/mnt/c/Users/ASUS/Documents/GII-2026/Planificacion_Automatica/PL2/Parte1/jshop2-console/JSHOP2.jar:/mnt/c/Users/ASUS/Documents/GII-2026/Planificacion_Automatica/PL2/Parte1/jshop2-console/antlr.jar:.
+
+1 plan(s) were found:
+
+Plan #1:
+Plan cost: 39.0
+
+(!pick d1 a1 box1 depot)
+(!fly d1 depot loc1)
+(!deliver d1 a1 box1 person1 loc1 food)
+(!fly d1 loc1 depot)
+(!pick d1 a1 box8 depot)
+(!fly d1 depot loc1)
+(!deliver d1 a1 box8 person1 loc1 medicine)
+(!fly d1 loc1 depot)
+(!pick d1 a1 box2 depot)
+(!fly d1 depot loc3)
+(!deliver d1 a1 box2 person3 loc3 food)
+(!fly d1 loc3 depot)
+(!pick d1 a1 box9 depot)
+(!fly d1 depot loc3)
+(!deliver d1 a1 box9 person3 loc3 medicine)
+(!fly d1 loc3 depot)
+(!pick d1 a1 box3 depot)
+(!fly d1 depot loc6)
+(!deliver d1 a1 box3 person6 loc6 food)
+(!fly d1 loc6 depot)
+(!pick d1 a1 box4 depot)
+(!fly d1 depot loc7)
+(!deliver d1 a1 box4 person7 loc7 food)
+(!fly d1 loc7 depot)
+(!pick d1 a1 box10 depot)
+(!fly d1 depot loc7)
+(!deliver d1 a1 box10 person7 loc7 medicine)
+(!fly d1 loc7 depot)
+(!pick d1 a1 box5 depot)
+(!fly d1 depot loc8)
+(!deliver d1 a1 box5 person8 loc8 food)
+(!fly d1 loc8 depot)
+(!pick d1 a1 box6 depot)
+(!fly d1 depot loc9)
+(!deliver d1 a1 box6 person9 loc9 food)
+(!fly d1 loc9 depot)
+(!pick d1 a1 box7 depot)
+(!fly d1 depot loc10)
+(!deliver d1 a1 box7 person10 loc10 food)
+--------------------
+
+Time Used = 0.027
+

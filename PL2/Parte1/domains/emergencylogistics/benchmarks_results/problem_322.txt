@@ -1,0 +1,7 @@
+/mnt/c/Users/ASUS/Documents/GII-2026/Planificacion_Automatica/PL2/Parte1/jshop2-console/JSHOP2.jar:/mnt/c/Users/ASUS/Documents/GII-2026/Planificacion_Automatica/PL2/Parte1/jshop2-console/antlr.jar:.
+problem.java:985: error: code too large
+	private static void createState0(State s)	{
+	                    ^
+1 error
+Error: Could not find or load main class problem
+Caused by: java.lang.ClassNotFoundException: problem

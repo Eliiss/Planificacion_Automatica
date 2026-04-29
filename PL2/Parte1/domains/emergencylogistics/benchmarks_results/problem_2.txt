@@ -1,0 +1,18 @@
+/mnt/c/Users/ASUS/Documents/GII-2026/Planificacion_Automatica/PL2/Parte1/jshop2-console/JSHOP2.jar:/mnt/c/Users/ASUS/Documents/GII-2026/Planificacion_Automatica/PL2/Parte1/jshop2-console/antlr.jar:.
+
+1 plan(s) were found:
+
+Plan #1:
+Plan cost: 7.0
+
+(!pick d1 a1 box1 depot)
+(!fly d1 depot loc1)
+(!deliver d1 a1 box1 person1 loc1 food)
+(!fly d1 loc1 depot)
+(!pick d1 a1 box2 depot)
+(!fly d1 depot loc1)
+(!deliver d1 a1 box2 person1 loc1 medicine)
+--------------------
+
+Time Used = 0.024
+
