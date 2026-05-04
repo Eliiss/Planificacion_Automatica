@@ -1,0 +1,6 @@
+{
+  "files.associations": {
+    "PL2/Parte1/domains/*/*": "plaintext",
+    "PL2/Parte2/domains/*/*": "plaintext"
+  }
+}

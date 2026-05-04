@@ -1,0 +1,81 @@
+(defproblem problem emergencylogistics
+
+  (
+    ; ========================
+    ; ENTIDADES
+    ; ========================
+    (depot deposito)
+
+    (drone d1)
+
+    (transporter tr1)
+    (transporter tr2)
+
+    (location loc1)
+    (location loc2)
+    (location loc3)
+
+    ; ========================
+    ; POSICIONES
+    ; ========================
+    (at-drone d1 deposito)
+
+    (at-transporter tr1 deposito)
+    (at-transporter tr2 deposito)
+
+    (transporter-free tr1)
+    (transporter-free tr2)
+
+    ; Carga inicial de los transportadores por destino y tipo
+    (load tr1 loc1 comida 0)
+    (load tr1 loc1 medicina 0)
+    (load tr1 loc2 comida 0)
+    (load tr1 loc2 medicina 0)
+    (load tr1 loc3 comida 0)
+    (load tr1 loc3 medicina 0)
+    (load tr2 loc1 comida 0)
+    (load tr2 loc1 medicina 0)
+    (load tr2 loc2 comida 0)
+    (load tr2 loc2 medicina 0)
+    (load tr2 loc3 comida 0)
+    (load tr2 loc3 medicina 0)
+    (load-total tr1 0)
+    (load-total tr2 0)
+
+    ; ========================
+    ; CAPACIDADES
+    ; ========================
+    (capacity tr1 5)
+    (capacity tr2 10)
+
+    ; ========================
+    ; STOCK EN DEPÓSITO
+    ; ========================
+    (stock deposito comida 7)
+    (stock deposito medicina 3)
+    (stock-total-deposito 10)
+
+    ; ========================
+    ; NECESIDADES
+    ; ========================
+    (need loc1 comida 4)
+    (need loc2 comida 2)
+    (need loc3 comida 1)
+    (need loc1 medicina 2)
+    (need loc2 medicina 1)
+    (need-total loc1 6)
+    (need-total loc2 3)
+    (need-total loc3 1)
+    ; ========================
+    ; COSTE INICIAL
+    ; ========================
+    (total-cost 0)
+  )
+
+  (
+    ; ========================
+    ; OBJETIVO
+    ; ========================
+    (enviar-todo)
+  )
+)

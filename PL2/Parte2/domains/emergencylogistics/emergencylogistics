@@ -1,0 +1,517 @@
+(defdomain emergencylogistics
+(
+  ; ============================================================
+  ; OPERADORES
+  ; ============================================================
+
+  ; ------------------------------------------------------------
+  ; Vuelo sin transportador
+  ; Coste fijo: 50
+  ; ------------------------------------------------------------
+  (:operator (!fly ?d ?from ?to)
+
+    ((at-drone ?d ?from)
+     (total-cost ?old-cost)
+     (assign ?new-cost (call + ?old-cost 50)))
+
+    ((at-drone ?d ?from)
+     (total-cost ?old-cost))
+
+    ((at-drone ?d ?to)
+     (total-cost ?new-cost))
+  )
+
+  ; ------------------------------------------------------------
+  ; Enganchar transportador
+  ; ------------------------------------------------------------
+  (:operator (!attach-transporter ?d ?tr ?loc)
+
+    ((at-drone ?d ?loc)
+     (at-transporter ?tr ?loc)
+     (transporter-free ?tr))
+
+    ((transporter-free ?tr))
+
+    ((holding-transporter ?d ?tr))
+  )
+
+
+  ; ------------------------------------------------------------
+  ; Soltar transportador
+  ; ------------------------------------------------------------
+  (:operator (!detach-transporter ?d ?tr ?loc)
+
+    ((at-drone ?d ?loc)
+     (at-transporter ?tr ?loc)
+     (holding-transporter ?d ?tr))
+
+    ((holding-transporter ?d ?tr))
+
+    ((transporter-free ?tr))
+  )
+
+
+  ; ------------------------------------------------------------
+  ; Vuelo con transportador
+  ; Coste: 50 + capacidad / 10
+  ; ------------------------------------------------------------
+  (:operator (!fly-with-transporter ?d ?tr ?from ?to)
+
+    ((at-drone ?d ?from)
+     (at-transporter ?tr ?from)
+     (holding-transporter ?d ?tr)
+     (capacity ?tr ?cap)
+     (total-cost ?old-cost)
+     (assign ?extra (call / ?cap 10))
+     (assign ?trip-cost (call + 50 ?extra))
+     (assign ?new-cost (call + ?old-cost ?trip-cost)))
+
+    ((at-drone ?d ?from)
+     (at-transporter ?tr ?from)
+     (total-cost ?old-cost))
+
+    ((at-drone ?d ?to)
+     (at-transporter ?tr ?to)
+     (total-cost ?new-cost))
+  )
+
+
+  ; ------------------------------------------------------------
+  ; Coger cajas sueltas
+  ; Retira ?q unidades de un tipo del depósito y las deja
+  ; en manos del dron. También actualiza el stock total.
+  ; ------------------------------------------------------------
+  (:operator (!pick-loose ?d ?type ?loc ?q)
+
+    ((at-drone ?d ?loc)
+     (stock ?loc ?type ?old-stock)
+     (stock-total-deposito ?old-total)
+     (call > ?q 0)
+     (call >= ?old-stock ?q)
+     (assign ?new-stock (call - ?old-stock ?q))
+     (assign ?new-total (call - ?old-total ?q)))
+
+    ((stock ?loc ?type ?old-stock)
+    (stock-total-deposito ?old-total))
+
+    ((stock ?loc ?type ?new-stock)
+     (stock-total-deposito ?new-total)
+     (holding-loose ?d ?type ?q))
+  )
+
+
+  ; ------------------------------------------------------------
+  ; Entregar cajas sueltas
+  ; Entrega al destino la carga suelta que lleva el dron.
+  ; Actualiza tanto la necesidad del tipo como la necesidad total.
+  ; ------------------------------------------------------------
+  (:operator (!deliver-loose ?d ?type ?loc ?q)
+
+    ((at-drone ?d ?loc)
+     (holding-loose ?d ?type ?q)
+     (need ?loc ?type ?old-need)
+     (need-total ?loc ?old-total-need)
+     (call > ?q 0)
+     (call >= ?old-need ?q)
+     (assign ?new-need (call - ?old-need ?q))
+     (assign ?new-total-need (call - ?old-total-need ?q)))
+
+    ((holding-loose ?d ?type ?q)
+     (need ?loc ?type ?old-need)
+     (need-total ?loc ?old-total-need))
+
+    ((need ?loc ?type ?new-need)
+     (need-total ?loc ?new-total-need))
+  )
+
+
+  ; ------------------------------------------------------------
+  ; Cargar cajas en el transportador
+  ; Carga ?q unidades desde el depósito en el transportador,
+  ; asignándolas a una localización destino concreta (?target).
+  ; Actualiza stock, carga por destino/tipo y carga total.
+  ; ------------------------------------------------------------
+  (:operator (!load-transporter ?d ?tr ?target ?type ?loc ?q)
+
+    ((at-drone ?d ?loc)
+     (at-transporter ?tr ?loc)
+     (transporter-free ?tr)
+     (stock ?loc ?type ?old-stock)
+     (stock-total-deposito ?old-total-stock)
+     (load ?tr ?target ?type ?old-load)
+     (load-total ?tr ?old-total)
+     (capacity ?tr ?cap)
+     (call > ?q 0)
+     (call >= ?old-stock ?q)
+     (assign ?new-stock (call - ?old-stock ?q))
+     (assign ?new-load (call + ?old-load ?q))
+     (assign ?new-total (call + ?old-total ?q))
+     (assign ?new-total-stock (call - ?old-total-stock ?q))
+     (call <= ?new-total ?cap))
+
+    ((stock ?loc ?type ?old-stock)
+     (stock-total-deposito ?old-total-stock)
+     (load ?tr ?target ?type ?old-load)
+     (load-total ?tr ?old-total))
+
+    ((stock ?loc ?type ?new-stock)
+     (stock-total-deposito ?new-total-stock)
+     (load ?tr ?target ?type ?new-load)
+     (load-total ?tr ?new-total))
+  )
+
+
+  ; ------------------------------------------------------------
+  ; Entregar cajas desde el transportador
+  ; Descarga en ?loc cajas que estaban cargadas para esa misma
+  ; localización. Reduce la necesidad, la carga por destino/tipo
+  ; y la carga total del transportador.
+  ; ------------------------------------------------------------
+  (:operator (!deliver-from-transporter ?d ?tr ?type ?loc ?q)
+
+    ((at-drone ?d ?loc)
+     (at-transporter ?tr ?loc)
+     (holding-transporter ?d ?tr)
+     (need ?loc ?type ?old-need)
+     (need-total ?loc ?old-total-need)
+     (load ?tr ?loc ?type ?old-load)
+     (load-total ?tr ?old-total)
+     (call > ?q 0)
+     (call >= ?old-need ?q)
+     (call >= ?old-load ?q)
+     (assign ?new-need (call - ?old-need ?q))
+     (assign ?new-total-need (call - ?old-total-need ?q))
+     (assign ?new-load (call - ?old-load ?q))
+     (assign ?new-total (call - ?old-total ?q)))
+
+    ((need ?loc ?type ?old-need)
+     (need-total ?loc ?old-total-need)
+     (load ?tr ?loc ?type ?old-load)
+     (load-total ?tr ?old-total))
+
+    ((need ?loc ?type ?new-need)
+     (need-total ?loc ?new-total-need)
+     (load ?tr ?loc ?type ?new-load)
+     (load-total ?tr ?new-total))
+  )
+
+
+  ; ============================================================
+  ; MÉTODOS
+  ; ============================================================
+
+  ; ------------------------------------------------------------
+  ; Tarea principal
+  ; Mientras exista alguna localización con necesidad total positiva,
+  ; se atiende primero una localización de necesidad máxima.
+  ; ------------------------------------------------------------
+  (:method (enviar-todo)
+
+    hay-necesidad
+    ((localizacion-maxima-necesidad ?loc))
+    ((atender-necesidad ?loc)
+     (enviar-todo))
+
+    terminado
+    ()
+    ()
+  )
+
+
+  ; ------------------------------------------------------------
+  ; Decisión principal
+  ;
+  ; Criterio acordado:
+  ; - Si queda una única caja total en el depósito, se entrega suelta.
+  ; - Si quedan dos o más cajas y hay transportador, se prepara una ruta.
+  ; - Si no hay transportadores, se entregan cajas sueltas.
+  ; - Solo atiende tipos para los que hay stock suficiente.
+  ; ------------------------------------------------------------
+  (:method (atender-necesidad ?loc)
+
+    ultima-caja-global-suelta
+    ((depot ?dep)
+     (stock-total-deposito 1)
+     (need ?loc ?type ?need)
+     (call > ?need 0)
+     (stock ?dep ?type ?q)
+     (call >= ?q ?need))
+    ((entregar-suelta ?loc ?type))
+
+    con-transportador
+    ((depot ?dep)
+     (stock-total-deposito ?total-stock)
+     (call > ?total-stock 1)
+     (need ?loc ?type ?need)
+     (call > ?need 0)
+     (stock ?dep ?type ?q)
+     (call >= ?q ?need)
+     (transporter ?tr))
+    ((entregar-con-transportador ?loc))
+
+    sin-transportador
+    ((depot ?dep)
+     (need ?loc ?type ?need)
+     (call > ?need 0)
+     (stock ?dep ?type ?stock-type)
+     (call >= ?stock-type ?need)
+     (no-transporters))
+    ((entregar-suelta ?loc ?type))
+  )
+
+
+  ; ------------------------------------------------------------
+  ; Entrega suelta
+  ; Se entrega siempre 1 caja.
+  ; ------------------------------------------------------------
+  (:method (entregar-suelta ?loc ?type)
+
+    entrega-suelta
+    ((depot ?dep)
+     (drone ?d)
+     (at-drone ?d ?from))
+    ((mover-drone ?d ?from ?dep)
+     (!pick-loose ?d ?type ?dep 1)
+     (mover-drone ?d ?dep ?loc)
+     (!deliver-loose ?d ?type ?loc 1)
+     (mover-drone ?d ?loc ?dep))
+  )
+
+
+  ; ------------------------------------------------------------
+  ; Entrega con transportador
+  ; Elige el transportador que mejor se ajusta a la necesidad total
+  ; de la localización inicial, prepara la carga de la ruta, engancha
+  ; el transportador, reparte por las paradas y lo suelta al volver.
+  ; ------------------------------------------------------------
+  (:method (entregar-con-transportador ?loc)
+
+    entrega-con-transportador
+    ((depot ?dep)
+     (drone ?d)
+     (at-drone ?d ?from)
+     (elegir-transportador ?loc ?tr)
+     (at-transporter ?tr ?dep)
+     (transporter-free ?tr))
+     
+    ((mover-drone ?d ?from ?dep)
+     (preparar-ruta ?d ?tr ?dep ?loc)
+     (!attach-transporter ?d ?tr ?dep)
+     (entregar-ruta ?d ?tr ?dep ?dep)
+     (!detach-transporter ?d ?tr ?dep))
+  )
+
+
+  ; ------------------------------------------------------------
+  ; Preparar una ruta: primero la localización elegida y después
+  ; intenta añadir otras localizaciones mientras quede capacidad útil.
+  ; ------------------------------------------------------------
+  (:method (preparar-ruta ?d ?tr ?dep ?loc)
+
+    preparar
+    ()
+    ((cargar-necesidades-lugar ?d ?tr ?dep ?loc)
+     (cargar-mas-localizaciones ?d ?tr ?dep))
+  )
+
+
+  ; ------------------------------------------------------------
+  ; Añadir localizaciones extra a la ruta
+  ; Busca localizaciones con necesidad pendiente y carga posible.
+  ; Termina si no queda capacidad o no hay ninguna necesidad cargable.
+  ; ------------------------------------------------------------
+  (:method (cargar-mas-localizaciones ?d ?tr ?dep)
+
+    cargar-otra-localizacion
+    ((capacity ?tr ?cap)
+     (load-total ?tr ?old-total)
+     (call < ?old-total ?cap)
+     (need-total ?next-loc ?next-total)
+     (call > ?next-total 0)
+     (hay-necesidad-cargable ?tr ?dep ?next-loc))
+    ((cargar-necesidades-lugar ?d ?tr ?dep ?next-loc)
+     (cargar-mas-localizaciones ?d ?tr ?dep))
+
+    terminado
+    ()
+    ()
+  )
+
+
+  ; ------------------------------------------------------------
+  ; Cargar en el transportador lo necesario para una localización.
+  ; Para cada tipo calcula la cantidad pendiente con la carga ya
+  ; asignada a ese destino y carga el mínimo entre pendiente, stock
+  ; y capacidad libre.
+  ; ------------------------------------------------------------
+  (:method (cargar-necesidades-lugar ?d ?tr ?dep ?loc)
+
+    cargar-tipo
+    ((capacity ?tr ?cap)
+     (load-total ?tr ?old-total)
+     (assign ?free-cap (call - ?cap ?old-total))
+     (call > ?free-cap 0)
+     (need ?loc ?type ?need)
+     (call > ?need 0)
+     (load ?tr ?loc ?type ?old-load)
+     (assign ?pending (call - ?need ?old-load))
+     (call > ?pending 0)
+     (stock ?dep ?type ?stock)
+     (call > ?stock 0)
+     (minimo ?stock ?pending ?m1)
+     (minimo ?m1 ?free-cap ?q)
+     (call > ?q 0))
+    ((!load-transporter ?d ?tr ?loc ?type ?dep ?q)
+     (cargar-necesidades-lugar ?d ?tr ?dep ?loc))
+
+    terminado
+    ()
+    ()
+  )
+
+
+  ; ------------------------------------------------------------
+  ; Entregar todo lo cargado para una localización.
+  ; Recorre los tipos cargados para ?loc y entrega todo lo posible
+  ; hasta que no quede carga útil para esa parada.
+  ; ------------------------------------------------------------
+  (:method (entregar-carga-lugar ?d ?tr ?loc)
+
+    entregar-tipo
+    ((load ?tr ?loc ?type ?load)
+     (call > ?load 0)
+     (need ?loc ?type ?need)
+     (call > ?need 0)
+     (minimo ?load ?need ?q)
+     (call > ?q 0))
+    ((!deliver-from-transporter ?d ?tr ?type ?loc ?q)
+     (entregar-carga-lugar ?d ?tr ?loc))
+
+    terminado
+    ()
+    ()
+  )
+
+
+  ; ------------------------------------------------------------
+  ; Ruta con varias paradas.
+  ; Visita localizaciones con carga pendiente y vuelve al depósito
+  ; cuando la carga total del transportador es cero.
+  ; ------------------------------------------------------------
+  (:method (entregar-ruta ?d ?tr ?dep ?current)
+
+    entregar-siguiente-localizacion
+    ((tiene-carga-para ?tr ?next-loc))
+    ((!fly-with-transporter ?d ?tr ?current ?next-loc)
+     (entregar-carga-lugar ?d ?tr ?next-loc)
+     (entregar-ruta ?d ?tr ?dep ?next-loc))
+
+    volver-deposito
+    ((load-total ?tr 0))
+    ((!fly-with-transporter ?d ?tr ?current ?dep))
+  )
+
+
+  ; ------------------------------------------------------------
+  ; Movimiento abstracto del dron sin transportador.
+  ; Si ya está en el destino no hace nada; en otro caso vuela.
+  ; ------------------------------------------------------------
+  (:method (mover-drone ?d ?from ?to)
+
+    ya-esta
+    ((at-drone ?d ?to))
+    ()
+
+    volar
+    ((at-drone ?d ?from))
+    ((!fly ?d ?from ?to))
+  )
+
+
+  ; ============================================================
+  ; AXIOMAS / PREDICADOS DERIVADOS
+  ; ============================================================
+  ; ------------------------------------------------------------
+  ; Localización con mayor necesidad total pendiente.
+  ; Una localización es máxima si tiene necesidad positiva y no hay
+  ; otra localización con necesidad total estrictamente mayor.
+  ; ------------------------------------------------------------
+  (:- (hay-localizacion-con-mas-necesidad ?total)
+      ((need-total ?other-loc ?other-total)
+       (call > ?other-total ?total)))
+
+  (:- (localizacion-maxima-necesidad ?loc)
+      ((need-total ?loc ?total)
+       (call > ?total 0)
+       (not (hay-localizacion-con-mas-necesidad ?total))))
+
+
+  ; ------------------------------------------------------------
+  ; Transportador que mejor se ajusta a la necesidad total.
+  ; Si alguno alcanza la necesidad, se elige el menor suficiente.
+  ; Si ninguno la alcanza, se elige el de mayor capacidad.
+  ; ------------------------------------------------------------
+  (:- (hay-transportador-suficiente ?loc)
+      ((need-total ?loc ?need)
+       (capacity ?tr ?cap)
+       (call >= ?cap ?need)))
+
+  (:- (hay-suficiente-menor ?loc ?cap)
+      ((need-total ?loc ?need)
+       (capacity ?other-tr ?other-cap)
+       (call >= ?other-cap ?need)
+       (call < ?other-cap ?cap)))
+
+  (:- (hay-transportador-mayor ?cap)
+      ((capacity ?other-tr ?other-cap)
+       (call > ?other-cap ?cap)))
+
+  (:- (elegir-transportador ?loc ?tr)
+      ((need-total ?loc ?need)
+       (capacity ?tr ?cap)
+       (call >= ?cap ?need)
+       (not (hay-suficiente-menor ?loc ?cap))))
+
+  (:- (elegir-transportador ?loc ?tr)
+      ((need-total ?loc ?need)
+       (capacity ?tr ?cap)
+       (call < ?cap ?need)
+       (not (hay-transportador-suficiente ?loc))
+       (not (hay-transportador-mayor ?cap))))
+
+
+  ; ------------------------------------------------------------
+  ; Carga por destino y carga posible para rutas con varias paradas.
+  ; La carga se representa como (load ?tr ?loc ?type ?q), de forma
+  ; que cada unidad cargada queda asociada a su destino.
+  ; ------------------------------------------------------------
+  (:- (tiene-carga-para ?tr ?loc)
+      ((load ?tr ?loc ?type ?q)
+       (call > ?q 0)))
+
+  (:- (hay-necesidad-cargable ?tr ?dep ?loc)
+      ((capacity ?tr ?cap)
+       (load-total ?tr ?old-total)
+       (assign ?free-cap (call - ?cap ?old-total))
+       (call > ?free-cap 0)
+       (need ?loc ?type ?need)
+       (call > ?need 0)
+       (load ?tr ?loc ?type ?old-load)
+       (assign ?pending (call - ?need ?old-load))
+       (call > ?pending 0)
+       (stock ?dep ?type ?stock)
+       (call > ?stock 0)))
+
+
+  ; ------------------------------------------------------------
+  ; Mínimo entre dos cantidades.
+  ; Devuelve el primer argumento si es menor o igual que el segundo;
+  ; si no, devuelve el segundo.
+  ; ------------------------------------------------------------
+  (:- (minimo ?a ?b ?a)
+      ((call <= ?a ?b)))
+
+  (:- (minimo ?a ?b ?b)
+      ((call > ?a ?b)))
+)
+)
