@@ -1,0 +1,32 @@
+(defproblem problem emergencylogistics
+  (
+    (depot deposito)
+    (drone d1)
+    (transporter tr1)
+    (location loc1) (location loc2) (location loc3) (location loc4)
+    
+    (at-drone d1 deposito)
+    (at-transporter tr1 deposito)
+    (transporter-free tr1)
+    
+    (load tr1 loc1 comida 0) (load tr1 loc1 medicina 0)
+    (load tr1 loc2 comida 0) (load tr1 loc2 medicina 0)
+    (load tr1 loc3 comida 0) (load tr1 loc3 medicina 0)
+    (load tr1 loc4 comida 0) (load tr1 loc4 medicina 0)
+    (load-total tr1 0)
+    (capacity tr1 10)
+    
+    (stock deposito comida 10) (stock deposito medicina 10)
+    (stock-total-deposito 20)
+    
+    (need loc1 comida 2) (need loc1 medicina 1) (need-total loc1 3)
+    (need loc2 comida 1) (need loc2 medicina 2) (need-total loc2 3)
+    (need loc3 comida 2) (need loc3 medicina 1) (need-total loc3 3)
+    (need loc4 comida 1) (need loc4 medicina 2) (need-total loc4 3)
+    
+    (total-cost 0)
+  )
+  (
+    (enviar-todo)
+  )
+)
