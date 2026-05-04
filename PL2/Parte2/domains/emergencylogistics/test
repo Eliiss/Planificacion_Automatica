@@ -54,6 +54,7 @@
     (stock deposito comida 7)
     (stock deposito medicina 3)
     (stock-total-deposito 10)
+    (need-total-sistema 10)
 
     ; ========================
     ; NECESIDADES

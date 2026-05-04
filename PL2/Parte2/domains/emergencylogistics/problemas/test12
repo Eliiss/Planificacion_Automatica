@@ -18,6 +18,7 @@
     
     (stock deposito comida 10) (stock deposito medicina 10)
     (stock-total-deposito 20)
+    (need-total-sistema 12)
     
     (need loc1 comida 2) (need loc1 medicina 1) (need-total loc1 3)
     (need loc2 comida 1) (need loc2 medicina 2) (need-total loc2 3)

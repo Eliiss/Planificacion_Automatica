@@ -10,11 +10,11 @@ Cuando encuentra una localización candidata, el método descompone la tarea en 
 
 ## `atender-necesidad`
 
-El método `atender-necesidad ?loc` decide cómo atender la localización seleccionada. Su decisión depende principalmente del stock total restante en el depósito, de si existe stock suficiente para el tipo de necesidad encontrado y de si hay transportadores disponibles.
+El método `atender-necesidad ?loc` decide cómo atender la localización seleccionada. Su decisión depende principalmente de la necesidad total pendiente del sistema, de si existe stock suficiente para el tipo de necesidad encontrado y de si hay transportadores disponibles.
 
-La primera rama, `ultima-caja-global-suelta`, se activa cuando solo queda una caja en total en el depósito. En ese caso se fuerza una entrega suelta mediante `entregar-suelta ?loc ?type`. Esta regla evita usar un transportador para transportar una única caja, incluso aunque exista un transportador disponible.
+La primera rama, `ultima-caja-global-suelta`, se activa cuando solo queda una necesidad total pendiente en todo el sistema, representada con `need-total-sistema 1`. En ese caso se fuerza una entrega suelta mediante `entregar-suelta ?loc ?type`. Esta regla evita usar un transportador para transportar la última caja necesaria, incluso aunque exista stock sobrante en el depósito y haya un transportador disponible.
 
-La segunda rama, `con-transportador`, se usa cuando queda más de una caja en el depósito y hay transportadores. En este caso no se atiende simplemente un tipo aislado, sino que se llama a `entregar-con-transportador ?loc`, que puede preparar una ruta con varias localizaciones y varias cargas. Esta es la rama principal para aprovechar transportadores.
+La segunda rama, `con-transportador`, se usa cuando queda más de una necesidad pendiente en el sistema y hay transportadores. En este caso no se atiende simplemente un tipo aislado, sino que se llama a `entregar-con-transportador ?loc`, que puede preparar una ruta con varias localizaciones y varias cargas. Esta es la rama principal para aprovechar transportadores.
 
 La tercera rama, `sin-transportador`, cubre el caso en el que no hay transportadores. Si existe una necesidad positiva y stock suficiente para cubrirla, el método usa `entregar-suelta ?loc ?type`. Esta rama actúa como alternativa cuando no es posible usar transporte con capacidad.
 
@@ -22,7 +22,7 @@ La tercera rama, `sin-transportador`, cubre el caso en el que no hay transportad
 
 El método `entregar-suelta ?loc ?type` modela una entrega individual sin transportador. Primero obtiene el depósito, el dron y la posición actual del dron. Después mueve el dron al depósito si no está ya allí, recoge una unidad del tipo necesario con `!pick-loose`, vuela a la localización destino, entrega esa unidad con `!deliver-loose` y finalmente vuelve al depósito.
 
-Este método siempre entrega una sola caja. Por eso está pensado para casos concretos: cuando solo queda una caja global en el depósito o cuando no hay transportadores disponibles. En el flujo normal con transportadores, las entregas de varias unidades y varios tipos se gestionan con los métodos de ruta.
+Este método siempre entrega una sola caja. Por eso está pensado para casos concretos: cuando solo queda una necesidad pendiente en todo el sistema o cuando no hay transportadores disponibles. En el flujo normal con transportadores, las entregas de varias unidades y varios tipos se gestionan con los métodos de ruta.
 
 ## `entregar-con-transportador`
 
@@ -56,7 +56,7 @@ Después de cargar un tipo, el método se llama recursivamente para seguir carga
 
 El método `entregar-carga-lugar ?d ?tr ?loc` entrega todas las cajas que el transportador lleva para una localización concreta. Busca cargas positivas mediante `load ?tr ?loc ?type ?load`, comprueba que la localización todavía necesita ese tipo y calcula la cantidad a entregar como el mínimo entre la carga disponible y la necesidad pendiente.
 
-Cuando encuentra una entrega posible, ejecuta `!deliver-from-transporter`. Ese operador reduce la necesidad del lugar, actualiza `need-total`, reduce la carga del transportador para esa localización y tipo, y reduce `load-total`. Tras cada entrega, el método se llama recursivamente para seguir descargando otros tipos destinados al mismo lugar. Cuando ya no queda carga útil para esa localización, finaliza con la rama `terminado`.
+Cuando encuentra una entrega posible, ejecuta `!deliver-from-transporter`. Ese operador reduce la necesidad del lugar, actualiza `need-total` y `need-total-sistema`, reduce la carga del transportador para esa localización y tipo, y reduce `load-total`. Tras cada entrega, el método se llama recursivamente para seguir descargando otros tipos destinados al mismo lugar. Cuando ya no queda carga útil para esa localización, finaliza con la rama `terminado`.
 
 ## `entregar-ruta`
 

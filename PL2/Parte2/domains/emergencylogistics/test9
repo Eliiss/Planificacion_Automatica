@@ -30,13 +30,14 @@
     (stock deposito comida 8)
     (stock deposito medicina 4)
     (stock-total-deposito 12)
+    (need-total-sistema 12)
 
     (need loc1 comida 5)
     (need loc1 medicina 3)
     (need-total loc1 8)
 
-    (need loc2 comida 2)
-    (need loc2 medicina 2)
+    (need loc2 comida 3)
+    (need loc2 medicina 1)
     (need-total loc2 4)
 
     (total-cost 0)

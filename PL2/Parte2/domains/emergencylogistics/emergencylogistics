@@ -103,7 +103,8 @@
   ; ------------------------------------------------------------
   ; Entregar cajas sueltas
   ; Entrega al destino la carga suelta que lleva el dron.
-  ; Actualiza tanto la necesidad del tipo como la necesidad total.
+  ; Actualiza tanto la necesidad del tipo como la necesidad total
+  ; de la localizacion y del sistema.
   ; ------------------------------------------------------------
   (:operator (!deliver-loose ?d ?type ?loc ?q)
 
@@ -111,17 +112,21 @@
      (holding-loose ?d ?type ?q)
      (need ?loc ?type ?old-need)
      (need-total ?loc ?old-total-need)
+     (need-total-sistema ?old-system-need)
      (call > ?q 0)
      (call >= ?old-need ?q)
      (assign ?new-need (call - ?old-need ?q))
-     (assign ?new-total-need (call - ?old-total-need ?q)))
+     (assign ?new-total-need (call - ?old-total-need ?q))
+     (assign ?new-system-need (call - ?old-system-need ?q)))
 
     ((holding-loose ?d ?type ?q)
      (need ?loc ?type ?old-need)
-     (need-total ?loc ?old-total-need))
+     (need-total ?loc ?old-total-need)
+     (need-total-sistema ?old-system-need))
 
     ((need ?loc ?type ?new-need)
-     (need-total ?loc ?new-total-need))
+     (need-total ?loc ?new-total-need)
+     (need-total-sistema ?new-system-need))
   )
 
 
@@ -165,7 +170,7 @@
   ; Entregar cajas desde el transportador
   ; Descarga en ?loc cajas que estaban cargadas para esa misma
   ; localización. Reduce la necesidad, la carga por destino/tipo
-  ; y la carga total del transportador.
+  ; y la carga total del transportador y del sistema.
   ; ------------------------------------------------------------
   (:operator (!deliver-from-transporter ?d ?tr ?type ?loc ?q)
 
@@ -174,6 +179,7 @@
      (holding-transporter ?d ?tr)
      (need ?loc ?type ?old-need)
      (need-total ?loc ?old-total-need)
+     (need-total-sistema ?old-system-need)
      (load ?tr ?loc ?type ?old-load)
      (load-total ?tr ?old-total)
      (call > ?q 0)
@@ -181,16 +187,19 @@
      (call >= ?old-load ?q)
      (assign ?new-need (call - ?old-need ?q))
      (assign ?new-total-need (call - ?old-total-need ?q))
+     (assign ?new-system-need (call - ?old-system-need ?q))
      (assign ?new-load (call - ?old-load ?q))
      (assign ?new-total (call - ?old-total ?q)))
 
     ((need ?loc ?type ?old-need)
      (need-total ?loc ?old-total-need)
+     (need-total-sistema ?old-system-need)
      (load ?tr ?loc ?type ?old-load)
      (load-total ?tr ?old-total))
 
     ((need ?loc ?type ?new-need)
      (need-total ?loc ?new-total-need)
+     (need-total-sistema ?new-system-need)
      (load ?tr ?loc ?type ?new-load)
      (load-total ?tr ?new-total))
   )
@@ -222,8 +231,8 @@
   ; Decisión principal
   ;
   ; Criterio acordado:
-  ; - Si queda una única caja total en el depósito, se entrega suelta.
-  ; - Si quedan dos o más cajas y hay transportador, se prepara una ruta.
+  ; - Si queda una única necesidad total en el sistema, se entrega suelta.
+  ; - Si quedan dos o más necesidades y hay transportador, se prepara una ruta.
   ; - Si no hay transportadores, se entregan cajas sueltas.
   ; - Solo atiende tipos para los que hay stock suficiente.
   ; ------------------------------------------------------------
@@ -231,17 +240,17 @@
 
     ultima-caja-global-suelta
     ((depot ?dep)
-     (stock-total-deposito 1)
+     (need-total-sistema 1)
      (need ?loc ?type ?need)
      (call > ?need 0)
      (stock ?dep ?type ?q)
-     (call >= ?q ?need))
+     (call > ?q 0))
     ((entregar-suelta ?loc ?type))
 
     con-transportador
     ((depot ?dep)
-     (stock-total-deposito ?total-stock)
-     (call > ?total-stock 1)
+     (need-total-sistema ?total-need)
+     (call > ?total-need 1)
      (need ?loc ?type ?need)
      (call > ?need 0)
      (stock ?dep ?type ?q)
